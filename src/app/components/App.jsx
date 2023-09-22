@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getData } from "./action";
-import { motion } from "framer-motion";
 
 function App() {
-  const [headers, setHeaders] = useState([]); // Initialize with an empty array
-
-  const [values, setValues] = useState([]);
-
+  const { data, status, error } = useSelector((state) => state.post);
   const dispatch = useDispatch();
-  const { error, data, status } = useSelector((state) => state.post);
+
+  const [headers, setHeaders] = useState([]);
+  const [columnData, setColumData] = useState([]);
+
+  const [timeSeries, setTimeSeries] = useState([]);
 
   useEffect(() => {
     dispatch(getData());
@@ -17,78 +17,92 @@ function App() {
 
   useEffect(() => {
     if (data) {
-      const tr = data["Meta Data"];
-      if (tr && typeof tr === "object") {
-        const headerKeys = Object.keys(tr);
-        const dataValue = Object.values(tr);
-        // Transform headerKeys into an array of objects
-        const headersWithAccessor = headerKeys.map((headerKey) => ({
-          Headers: headerKey.replace(/[0-9. ]/g, ""),
-          accessor: headerKey,
-        }));
+      const timeSeries = data["Time Series (5min)"];
 
-        setHeaders(headersWithAccessor);
-        setValues(dataValue);
+      if (timeSeries && typeof timeSeries === "object") {
+        const timeKeys = Object.keys(timeSeries);
+        const valueOnjects = Object.values(timeSeries);
+
+        if (valueOnjects && typeof valueOnjects === "object") {
+          const val = Object.values(valueOnjects);
+
+          // val[0]
+
+          const getHeaders = Object.keys(val[0]);
+          const getData = val.map((item) => Object.values(item));
+
+          const headings = getHeaders.map((item) => ({
+            Headers: item.replace(/[0-9\s.]/g, ""),
+            accessor: item.replace(/[0-9\s.]/g, ""),
+          }));
+
+          setHeaders(headings);
+
+          // console.log(timeKeys);
+          setTimeSeries(timeKeys);
+
+          setColumData(getData);
+        }
+
+        // console.log(valueOnjects.map((item) => item["1. open"]));
       }
     }
   }, [data]);
 
-  const handleButton = () => {
-    // Add your button handling logic here
-  };
-
   if (status === "loading") {
-    return <h1>Loading</h1>;
+    return <h1>Loading...</h1>;
   }
 
   if (status === "error") {
-    return <h1>Something Went Wrong: {error}</h1>;
+    return <h1>Something Went Wrong:{error}</h1>;
   }
 
-  console.log(data);
   return (
-    <div>
-      <table>
-        <thead>
-          <tr>
-            {headers.map((header, index) => (
-              <th key={index}>{header.Headers}</th>
+    <>
+      <h1>
+        Real Time Forex,ETF,{" "}
+        <span style={{ color: "blue" }}>Technocal Indicators</span> Data From
+        API
+      </h1>
+
+      <div className="tableContainer">
+        <table className="tableOne">
+          <thead>
+            {" "}
+            <th>No</th>
+            <th>Time Series</th>{" "}
+          </thead>
+          <tbody>
+            {timeSeries.map((item, timeIndex) => (
+              <tr key={timeIndex}>
+                <td>{timeIndex + 1}</td>
+                <td>{item}</td>
+              </tr>
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {/* {values.map((item, index) => (
+          </tbody>
+        </table>
+
+        <table className="tableTwo">
+          <thead>
             <tr>
-              {headers.map((ping, ind) => (
-                // <td>{values[ping.accessor]}</td>
-                <td>{item[ping.Headers]}</td>
+              {headers.map((item, index) => (
+                <th key={index}> {item.Headers}</th>
               ))}
             </tr>
-          ))} */}
+          </thead>
 
-          {values.map((values, valuesIndex) => (
-            <tr key={valuesIndex}>
-              {headers.map((cols, colIndex) => (
-                <td key={colIndex}>
-                  <motion.div
-                    className=""
-                    layoutTransition={{
-                      type: "spring",
-                      stiffness: 100,
-                      damping: 10,
-                    }}
-                  >
-                    {values[cols.accessor]}
-                  </motion.div>
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <button onClick={handleButton}>Handle</button>
-    </div>
+          <tbody>
+            {columnData.map((item, colIndex) => (
+              <tr key={colIndex}>
+                {headers.map((itemData, headerIndex) => (
+                  <td key={headerIndex}>{item[headerIndex]}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
